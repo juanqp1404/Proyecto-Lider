@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 import re
 import time
@@ -30,9 +31,39 @@ def kill_edge_processes():
     else:
         print("No se encontraron procesos de Edge en ejecución.")
 
-# TODO: cerrar proceso msedge si esta en segundo plano con task manager antes de ejecutar
+def calcular_domingo_asociado(fecha=None):
+    """
+    Calcula el domingo asociado según un patrón de rangos de fechas
+    y devuelve un string formato 'Sun, 7 Sep, 2025'.
+    """
+    if fecha is None:
+        fecha = datetime.today().date()
+    
+    FECHA_INICIO = datetime(2025, 10, 14).date()
+    DOMINGO_BASE = datetime(2025, 9, 7).date()
+    
+    dias_transcurridos = (fecha - FECHA_INICIO).days
+    
+    if dias_transcurridos < 0:
+        semanas_hacia_atras = (abs(dias_transcurridos) + 6) // 7
+        domingo_resultado = DOMINGO_BASE - timedelta(weeks=semanas_hacia_atras)
+    elif dias_transcurridos <= 5:
+        domingo_resultado = DOMINGO_BASE
+    else:
+        dias_post_primera = dias_transcurridos - 6
+        semanas_extra = (dias_post_primera // 7) + 1
+        domingo_resultado = DOMINGO_BASE + timedelta(weeks=semanas_extra)
+    
+    # Formatear sin cero inicial en el día
+    abreviatura_dia = domingo_resultado.strftime('%a')
+    abreviatura_mes = domingo_resultado.strftime('%b')
+    dia = domingo_resultado.day
+    anio = domingo_resultado.year
+    
+    return f"{abreviatura_dia}, {dia} {abreviatura_mes}, {anio}"
 
 def run(playwright: Playwright) -> None:
+    fecha_filtrado = calcular_domingo_asociado()
     user_data_dir = r"C:/Users/JQuintero27/AppData/Local/Microsoft/Edge/User Data"
     carpeta_actual = "./"
     # browser = playwright.chromium.launch(headless=False,executable_path='C:/Program Files/Google/Chrome/Application/chrome.exe')
@@ -48,7 +79,7 @@ def run(playwright: Playwright) -> None:
     time.sleep(2)
     page.get_by_role("option", name="Requisition").click()
     time.sleep(2)
-    page.get_by_role("textbox", name="From:").fill("Sun, 7 Sep, 2025")
+    page.get_by_role("textbox", name="From:").fill(fecha_filtrado)
     time.sleep(2)
     page.get_by_title("Run this search").click()
     time.sleep(2)
