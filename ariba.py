@@ -71,10 +71,11 @@ def run(playwright: Playwright) -> None:
     page = context.new_page()
     page.goto("https://s1.ariba.com/Sourcing/Main/aw?awh=r&awssk=ODTzCxAIbpbHwlV1&realm=schlumberger")
     # time.sleep(40)
+    page.wait_for_selector("#_c19zzd")
     page.get_by_role("button", name="Manage").click()
     time.sleep(2)
     page.get_by_role("menuitem", name="Queues").click()
-    time.sleep(2)
+    page.wait_for_selector("#text__c_npbb")
     page.locator("#text__c_npbb").click()
     time.sleep(2)
     page.get_by_role("option", name="Requisition").click()
@@ -84,7 +85,7 @@ def run(playwright: Playwright) -> None:
     page.get_by_title("Run this search").click()
     time.sleep(2)
     # page.get_by_role("button", id="_7msd8").click()
-    page.query_selector('#_7msd8')
+    page.query_selector('#_7msd8 > div').click()
     time.sleep(2)
 
     with page.expect_download() as download_info:
@@ -92,7 +93,7 @@ def run(playwright: Playwright) -> None:
 
     download = download_info.value
 
-    new_filename = "DF"
+    new_filename = "DF.xls"
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
     print(f"Descargando el archivo como: {new_filename}")
     print(f"URL del archivo: {download}")
