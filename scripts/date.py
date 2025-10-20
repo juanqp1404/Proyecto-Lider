@@ -5,7 +5,7 @@ hoy = datetime.today().date()
 
 # Cálculo de cuántos días restar para llegar al último domingo
 # weekday(): lunes=0 … domingo=6 → (weekday + 1) % 7 da 0 si hoy es domingo
-dias_desde_domingo = (hoy.weekday() + 1) % 7
+dias_desde_domingo = (hoy.weekday() + 1) % 7 # TODO: Cambiar apartir del 7 de septiembre
 
 # Fecha del último domingo
 ultimo_domingo = hoy - timedelta(days=dias_desde_domingo)

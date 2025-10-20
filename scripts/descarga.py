@@ -1,5 +1,6 @@
 import os
 from playwright.sync_api import Playwright, sync_playwright
+import time
 
 def run(playwright: Playwright) -> None:
     # Obtener la ruta absoluta de la carpeta del script
@@ -14,16 +15,16 @@ def run(playwright: Playwright) -> None:
 
     # Interceptar la descarga antes del clic
     with page.expect_download() as download_info:
-        page.get_by_role("link", name="Blue Simple Professional CV").click()
+        page.get_by_role("link", name="vacio.json").click()
     download = download_info.value
-
+    time.sleep(10)
     # dowwload_name = download.suggested_filename
-    new_filename = "Mi_CV_Descargado.pdf"
+    new_filename = "archivo.json"
     
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
     print(f"Descargando el archivo como: {new_filename}")
     print(f"URL del archivo: {download}")
-
+    time.sleep(10)
     # Guardar el archivo en la carpeta actual con su nombre original
     ruta_destino = os.path.join(carpeta_actual, new_filename)
     download.save_as(ruta_destino)
