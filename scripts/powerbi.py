@@ -17,7 +17,7 @@ def main():
     # ========================================
     # 1. CONFIGURACIÓN (modifica aquí)
     # ========================================
-    archivo = r"C:\Users\xanti\Desktop\clases\proyectos\conflicto\reports\figures\Reporte Conflicto Armado (2022 - 2025).pbix"
+    archivo = r"C:\Users\JQuintero27\Downloads\Workload Dispatching 6 (1) 1.pbix"
     
     
     # ========================================
@@ -44,7 +44,7 @@ def main():
     # 4. ACCIONES (modifica según necesites)
     # ========================================
     
-    esperar_carga(10)
+    # esperar_carga(10)
     # Ejemplo 1: Refrescar datos
     # refrescar_datos()
     
