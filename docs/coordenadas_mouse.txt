@@ -1,0 +1,9 @@
+PS - Dispatching(3 click):
+	1 click (1897, 519)
+	2 click (1693, 156)
+	3 click (1573, 148)
+
+SAP Buyers(3 clicks):
+	1 click (1897, 595)
+	2 click (1693, 169)
+	3 click (1573, 174)
