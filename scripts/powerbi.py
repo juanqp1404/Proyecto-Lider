@@ -9,6 +9,8 @@ from utils.acciones_powerbi import (
     guardar_archivo,
     exportar_visual_coordenadas,
     esperar_carga,
+    refrescar_ps_dispatching,
+    refrescar_sap_buyers,
     cerrar_powerbi
 )
 
@@ -43,7 +45,10 @@ def main():
     # ========================================
     # 4. ACCIONES (modifica según necesites)
     # ========================================
-    
+    refrescar_ps_dispatching()
+    esperar_carga(300)
+    refrescar_sap_buyers()
+    esperar_carga(35)
     # esperar_carga(10)
     # Ejemplo 1: Refrescar datos
     # refrescar_datos()

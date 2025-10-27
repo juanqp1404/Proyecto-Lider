@@ -49,6 +49,19 @@ def exportar_visual_coordenadas(x: int, y: int, nombre_archivo: str = None):
     
     print("✓ Exportación completada")
 
+def refrescar_ps_dispatching():
+    mouse.click(coords=(1897, 519))
+    time.sleep(2)
+    mouse.click(coords=(1693, 156))
+    time.sleep(2)
+    mouse.click(coords=(1573, 148))
+
+def refrescar_sap_buyers():
+    mouse.click(coords=(1897, 595))
+    time.sleep(2)
+    mouse.click(coords=(1693, 169))
+    time.sleep(2)
+    mouse.click(coords=(1573, 174))
 
 def esperar_carga(segundos: int = 10):
     """Espera a que el dashboard cargue"""
