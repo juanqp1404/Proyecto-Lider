@@ -77,13 +77,13 @@ def run(playwright: Playwright) -> None:
     page.get_by_role("menuitem", name="Queues").click()
     page.wait_for_selector("#text__c_npbb")
     page.locator("#text__c_npbb").click()
-    time.sleep(2)
+    page.wait_for_selector("#text__c_npbb")
     page.get_by_role("option", name="Requisition").click()
     time.sleep(2)
     page.get_by_role("textbox", name="From:").fill(fecha_filtrado)
     time.sleep(2)
     page.get_by_title("Run this search").click()
-    time.sleep(2)
+    page.wait_for_selector("#_7msd8 > div")
     # page.get_by_role("button", id="_7msd8").click()
     page.query_selector('#_7msd8 > div').click()
     time.sleep(2)
@@ -99,7 +99,7 @@ def run(playwright: Playwright) -> None:
     print(f"URL del archivo: {download}")
     time.sleep(20)
     # Guardar el archivo en la carpeta actual con su nombre original
-    ruta_destino = os.path.join(carpeta_actual, new_filename)
+    ruta_destino = os.path.join(carpeta_actual,"data/", new_filename) #./data/DF.xls
     download.save_as(ruta_destino)
 
     # page.goto("https://example.com/")
