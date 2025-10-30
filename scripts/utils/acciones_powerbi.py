@@ -72,6 +72,13 @@ def exportar_assignation_history():
     time.sleep(4)
     mouse.click(coords=(1072, 557))
 
+
+def guardar_assignation_history():
+    mouse.click(coords=(720,675))
+    time.sleep(2)
+    mouse.click(coords=(1050, 521))
+ 
+
 def esperar_carga(segundos: int = 10):
     """Espera a que el dashboard cargue"""
     print(f"→ Esperando {segundos} segundos a que cargue...")

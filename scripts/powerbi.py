@@ -5,6 +5,7 @@ Modifica las secciones según lo que necesites
 from pywinauto.application import Application
 from utils.bi_utils import abrir_o_conectar_powerbi
 from utils.acciones_powerbi import (
+    guardar_assignation_history,
     refrescar_datos,
     guardar_archivo,
     exportar_visual_coordenadas,
@@ -51,6 +52,7 @@ def main():
     # refrescar_sap_buyers()
     # esperar_carga(25)
     exportar_assignation_history()
+    guardar_assignation_history()
     # esperar_carga(10)
     # Ejemplo 1: Refrescar datos
     # refrescar_datos()
