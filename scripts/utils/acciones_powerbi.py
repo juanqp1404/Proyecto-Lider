@@ -63,6 +63,15 @@ def refrescar_sap_buyers():
     time.sleep(2)
     mouse.click(coords=(1573, 174))
 
+def exportar_assignation_history():
+    mouse.click(coords=(1238,801))
+    time.sleep(2)
+    mouse.click(coords=(1238, 769))
+    time.sleep(2)
+    mouse.click(coords=(1349, 442))
+    time.sleep(4)
+    mouse.click(coords=(1072, 557))
+
 def esperar_carga(segundos: int = 10):
     """Espera a que el dashboard cargue"""
     print(f"→ Esperando {segundos} segundos a que cargue...")
