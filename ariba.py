@@ -73,7 +73,7 @@ def run(playwright: Playwright) -> None:
     # time.sleep(40)
     page.wait_for_selector("#_c19zzd")
     page.get_by_role("button", name="Manage").click()
-    time.sleep(2)
+    page.wait_for_selector("role=menuitem[name='Queues']")
     page.get_by_role("menuitem", name="Queues").click()
     page.wait_for_selector("#text__c_npbb")
     page.locator("#text__c_npbb").click()
