@@ -79,15 +79,18 @@ def run(playwright: Playwright) -> None:
     page.locator("#text__c_npbb").click()
     page.wait_for_selector("#text__c_npbb")
     page.get_by_role("option", name="Requisition").click()
-    time.sleep(2)
+    page.wait_for_selector("role=textbox[name='From:']")
     page.get_by_role("textbox", name="From:").fill(fecha_filtrado)
-    time.sleep(2)
+    page.wait_for_selector("[title='Run this search']")
     page.get_by_title("Run this search").click()
-    page.wait_for_selector("#_7msd8 > div")
-    # page.get_by_role("button", id="_7msd8").click()
-    page.query_selector('#_7msd8 > div').click()
-    time.sleep(2)
-
+    target_element = page.locator('#_7msd8 > div[title="Table Options Menu"]')
+    target_element.scroll_into_view_if_needed()
+    page.wait_for_selector("#_7msd8> div[title='Table Options Menu']")
+     #<div align="ABSMIDDLE" title="Table Options Menu" data-icon="" class="w-tbl-customize-view"></div> 
+    # page.get_by_role("button", id="_7msd8").click()                                           
+    #page.query_selector('#_7msd8 > div[title="Table Options Menu"]').click()
+    target_element.click()
+    page.wait_for_selector("role=menuitem[name='Export all Rows']")        
     with page.expect_download() as download_info:
         page.get_by_role("menuitem", name="Export all Rows").click()
 
