@@ -82,10 +82,11 @@ def run(playwright: Playwright) -> None:
     page.wait_for_selector("role=textbox[name='From:']")
     page.get_by_role("textbox", name="From:").fill(fecha_filtrado)
     page.wait_for_selector("[title='Run this search']")
-    page.get_by_title("Run this search").click()
+    page.get_by_title("Run this search").click() 
+    time.sleep(3)
+    page.wait_for_selector("#_7msd8 > div[title='Table Options Menu']") 
     target_element = page.locator('#_7msd8 > div[title="Table Options Menu"]')
     target_element.scroll_into_view_if_needed()
-    page.wait_for_selector("#_7msd8> div[title='Table Options Menu']")
      #<div align="ABSMIDDLE" title="Table Options Menu" data-icon="" class="w-tbl-customize-view"></div> 
     # page.get_by_role("button", id="_7msd8").click()                                           
     #page.query_selector('#_7msd8 > div[title="Table Options Menu"]').click()
