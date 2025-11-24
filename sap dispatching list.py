@@ -45,7 +45,7 @@ def run(playwright: Playwright) -> None:
     page.get_by_role("menuitem", name="Export").click()
     page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible")
     
-    with page.expect_download() as download_info:
+    with page.expect_download(timeout=450) as download_info:
        page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
 
     download = download_info.value
