@@ -41,15 +41,11 @@ def run(playwright: Playwright) -> None:
     context = playwright.chromium.launch_persistent_context(user_data_dir, headless=False, channel="msedge")
     page = context.new_page()
     page.goto("https://slb001.sharepoint.com/sites/BogotaPSC/Lists/SAP%20Dispatching%20List%20January%202019/AllItems.aspx?FilterField1=Author&FilterValue1=Juan%20Quintero&FilterType1=User&sortField=Created&isAscending=false&viewid=ba980fc8%2D7c86%2D4e24%2D8f25%2Dd39c7c4d7aeb")
-    time.sleep(5)
+    page.wait_for_selector('role=menuitem[name="Export"]', state="visible")
     page.get_by_role("menuitem", name="Export").click()
-    time.sleep(10)
+    page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible")
     
-
-
-    # context.close()
     with page.expect_download() as download_info:
-    #    page.wait_for_event()
        page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
 
     download = download_info.value
@@ -58,7 +54,6 @@ def run(playwright: Playwright) -> None:
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
     print(f"Descargando el archivo como: {new_filename}")
     print(f"URL del archivo: {download}")
-    time.sleep(20)
     # Guardar el archivo en la carpeta actual con su nombre original
     ruta_destino = os.path.join(carpeta_actual,"data/sharepoint/", new_filename)
     download.save_as(ruta_destino)
@@ -75,7 +70,7 @@ def run(playwright: Playwright) -> None:
     # page.fill('#i0116','JQuintero27@slb.com')
     # time.sleep(305)
 
-    # context.close()
+    context.close()
     # browser.close()
 
 kill_edge_processes()

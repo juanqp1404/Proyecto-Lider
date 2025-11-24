@@ -41,13 +41,12 @@ def run(playwright: Playwright) -> None:
     context = playwright.chromium.launch_persistent_context(user_data_dir, headless=False, channel="msedge")
     page = context.new_page()
     page.goto("https://slb001.sharepoint.com/sites/BogotaPSC/Lists/SAP%20Buyers/SAPBuyers.aspx?FilterField1=Category&FilterValue1=CAMERON%20INDIRECT&FilterType1=Choice&viewid=a9086548%2D1956%2D47a6%2Da47e%2D9cd568df5175&newTargetListUrl=%2Fsites%2FBogotaPSC%2FLists%2FSAP%20Buyers&viewpath=%2Fsites%2FBogotaPSC%2FLists%2FSAP%20Buyers%2FSAPBuyers%2Easpx&useFiltersInViewXml=1&startedResponseCatch=true&isSPOFile=1&ovuser=41ff26dc%2D250f%2D4b13%2D8981%2D739be8610c21%2CJQuintero27%40slb%2Ecom&OR=Teams%2DHL&CT=1756129131708&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNTA3MzExNzQxMCIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D")
-    time.sleep(5)
+    page.wait_for_selector('role=menuitem[name="Export"]', state="visible")
     page.get_by_role("menuitem", name="Export").click()
-    time.sleep(5)
+    page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible")
     
 
 
-    # context.close()
     with page.expect_download() as download_info:
        page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
 
@@ -57,7 +56,6 @@ def run(playwright: Playwright) -> None:
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
     print(f"Descargando el archivo como: {new_filename}")
     print(f"URL del archivo: {download}")
-    time.sleep(20)
     # Guardar el archivo en la carpeta actual con su nombre original
     ruta_destino = os.path.join(carpeta_actual,"data/sharepoint/", new_filename)
     download.save_as(ruta_destino)
@@ -74,7 +72,7 @@ def run(playwright: Playwright) -> None:
     # page.fill('#i0116','JQuintero27@slb.com')
     # time.sleep(305)
 
-    # context.close()
+    context.close()
     # browser.close()
 
 kill_edge_processes()
