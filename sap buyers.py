@@ -53,7 +53,7 @@ def run(playwright: Playwright) -> None:
 
     download = download_info.value
 
-    new_filename = "sap_buyers.xls"
+    new_filename = "sap_buyers.csv"
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
     print(f"Descargando el archivo como: {new_filename}")
     print(f"URL del archivo: {download}")
