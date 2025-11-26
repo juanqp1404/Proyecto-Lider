@@ -1,0 +1,3 @@
+ariba.py(DF.xls) -> Cameron Indirect Manual Assignment Tool.ipyn(Resultado.xlsx)
+
+sap_buyers.py(sap_buyers.csv) -> workload 
