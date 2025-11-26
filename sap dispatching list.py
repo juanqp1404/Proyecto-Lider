@@ -41,12 +41,18 @@ def run(playwright: Playwright) -> None:
     context = playwright.chromium.launch_persistent_context(user_data_dir, headless=False, channel="msedge")
     page = context.new_page()
     page.goto("https://slb001.sharepoint.com/sites/BogotaPSC/Lists/SAP%20Dispatching%20List%20January%202019/AllItems.aspx?FilterField1=Author&FilterValue1=Juan%20Quintero&FilterType1=User&sortField=Created&isAscending=false&viewid=ba980fc8%2D7c86%2D4e24%2D8f25%2Dd39c7c4d7aeb")
-    page.wait_for_selector('role=menuitem[name="Export"]', state="visible")
+
+    # Espera que la página termine de cargar antes de buscar elementos
+    page.wait_for_load_state('networkidle', timeout=15000)
+
+    page.wait_for_selector('role=menuitem[name="Export"]', state="visible", timeout=5000)
     page.get_by_role("menuitem", name="Export").click()
-    page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible")
-    
-    with page.expect_download(timeout=450) as download_info:
-       page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
+
+    page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible", timeout=5000)
+
+    with page.expect_download(timeout=45000) as download_info:  # 45 segundos para la descarga
+        page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
+
 
     download = download_info.value
 
