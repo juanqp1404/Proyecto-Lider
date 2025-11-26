@@ -70,28 +70,32 @@ def run(playwright: Playwright) -> None:
     context = playwright.chromium.launch_persistent_context(user_data_dir, headless=False, channel="msedge")
     page = context.new_page()
     page.goto("https://s1.ariba.com/Sourcing/Main/aw?awh=r&awssk=ODTzCxAIbpbHwlV1&realm=schlumberger")
-    # time.sleep(40)
-    page.wait_for_selector("#_c19zzd")
+
+    page.wait_for_selector("role=button[name='Manage']", state='visible')
     page.get_by_role("button", name="Manage").click()
-    page.wait_for_selector("role=menuitem[name='Queues']")
+
+    page.wait_for_selector("role=menuitem[name='Queues']", state='visible')
     page.get_by_role("menuitem", name="Queues").click()
-    page.wait_for_selector("#text__c_npbb")
+
+    page.wait_for_selector("#text__c_npbb", state='visible')
     page.locator("#text__c_npbb").click()
-    page.wait_for_selector("#text__c_npbb")
+
+    page.wait_for_selector("role=option[name='Requisition']", state='visible')
     page.get_by_role("option", name="Requisition").click()
-    page.wait_for_selector("role=textbox[name='From:']")
+
+    page.wait_for_selector("role=textbox[name='From:']", state='visible')
     page.get_by_role("textbox", name="From:").fill(fecha_filtrado)
-    page.wait_for_selector("[title='Run this search']")
-    page.get_by_title("Run this search").click() 
-    time.sleep(3)
-    page.wait_for_selector("#_7msd8 > div[title='Table Options Menu']") 
-    target_element = page.locator('#_7msd8 > div[title="Table Options Menu"]')
-    target_element.scroll_into_view_if_needed()
-     #<div align="ABSMIDDLE" title="Table Options Menu" data-icon="" class="w-tbl-customize-view"></div> 
-    # page.get_by_role("button", id="_7msd8").click()                                           
-    #page.query_selector('#_7msd8 > div[title="Table Options Menu"]').click()
-    target_element.click()
-    page.wait_for_selector("role=menuitem[name='Export all Rows']")        
+
+    page.wait_for_selector("[title='Run this search']", state='visible')
+    page.get_by_title("Run this search").click()
+
+    page.wait_for_load_state('networkidle', timeout=10000)
+
+    page.wait_for_selector("div[title='Table Options Menu']", state='visible', timeout=10000)
+    page.locator("div[title='Table Options Menu']").click()
+
+    page.wait_for_selector("role=menuitem[name='Export all Rows']", state='visible')
+
     with page.expect_download() as download_info:
         page.get_by_role("menuitem", name="Export all Rows").click()
 
