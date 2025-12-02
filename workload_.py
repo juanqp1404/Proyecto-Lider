@@ -13,8 +13,8 @@ def parse_today_fixed() -> datetime:
     Para pruebas: fija 'hoy' al 2025-11-26 09:45.
     En producción, cambia a: return datetime.now()
     """
-    return datetime(2025, 11, 26, 9, 45)
-    # return datetime.now()
+    #return datetime(2025, 11, 26, 9, 45)
+    return datetime.now()
 
 
 def load_data(
@@ -138,7 +138,7 @@ def create_workload_by_subcategory(
     if df_b_sub.empty:
         raise ValueError(f"No hay buyers con Availability_SAP > 0 para Sub-Category = {subcategory_value}")
 
-    # Normalizar Available For Urgencies: dejar 'Yes'/'No' limpio en Urgent_enabled
+    # Normalizar Available For Urgencies: dejar 'Yes'/'No' limpio en Urgent_enabled # !BUG: Solo salen los que tienen "Yes" en urgent_enabled
     df_b_sub["Urgent_enabled"] = df_b_sub["Available For Urgencies"].astype(str).str.strip()
 
     # df_dispatching_today: contar SC Number por Buyer Alias

@@ -106,11 +106,11 @@ def run(playwright: Playwright) -> None:
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--disable-extensions",
-                "--window-size=1920,1080"
+                #"--window-size=1920,1080"
             ]
         )
         page = context.new_page()
-        page.set_viewport_size({"width": 1920, "height": 1080})
+        #page.set_viewport_size({"width": 1920, "height": 1080})
         
         print("🌐 Navegando a Ariba...")
         page.goto("https://s1.ariba.com/Sourcing/Main/aw?awh=r&awssk=ODTzCxAIbpbHwlV1&realm=schlumberger", 

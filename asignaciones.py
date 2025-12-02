@@ -6,7 +6,7 @@ from typing import List, Tuple
 import pandas as pd
 
 
-# ------------------ UTILIDADES GENERALES ------------------ #
+# ------------------ UTILIDADES GENERALES ------------------ 
 
 def ensure_output_dir(path: str = "./data/final") -> None:
     os.makedirs(path, exist_ok=True)
@@ -17,8 +17,8 @@ def parse_today_fixed() -> datetime:
     Para pruebas: fija 'hoy' al 2025-11-26 09:45.
     En producción, cambia a: return datetime.now()
     """
-    return datetime(2025, 11, 26, 9, 45)
-    # return datetime.now()
+    #return datetime(2025, 11, 26, 9, 45)
+    return datetime.now()
 
 
 def load_workloads(
