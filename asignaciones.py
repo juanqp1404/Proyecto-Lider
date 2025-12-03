@@ -18,6 +18,7 @@ def parse_today_fixed() -> datetime:
     En producción, cambia a: return datetime.now()
     """
     #return datetime(2025, 11, 26, 9, 45)
+    # return datetime(2025, 12, 2, 9, 45)
     return datetime.now()
 
 
@@ -53,9 +54,9 @@ def split_special_prs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     Usa la columna PR.
     """
     df = df.copy()
-    df["PR"] = df["PR"].astype(str).str.strip()
+    df["ID"] = df["ID"].astype(str).str.strip()
 
-    mask_special = df["PR"].str.contains(r"-V[23]$", case=False, na=False)
+    mask_special = df["ID"].str.contains(r"-V", case=False, na=False)
     df_special = df[mask_special].copy()
     df_normal = df[~mask_special].copy()
 
@@ -202,7 +203,7 @@ def assign_buyers_for_region(
     df_non_urgent = df[~urgent_mask].copy()
 
     # Buyers habilitados para urgencias (Yes)
-    df_workload_urgent = filter_buyers_by_urgency(df_workload_shift, urgent_required=True)
+    df_workload_urgent = filter_buyers_by_urgency(df_workload_shift, urgent_required=False)
     buyers_urgent = df_workload_urgent["Buyer Alias"].dropna().tolist()
 
     # Si hay urgentes pero nadie habilitado, puedes:
