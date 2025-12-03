@@ -17,8 +17,7 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler('./logs/orquestador.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
-    ],
-    encoding='utf-8'  # Para Windows
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ Path("./logs").mkdir(exist_ok=True)
 
 FLUJOS = [
     ("ariba", ["python", "ariba.py"]),
-    ("Cameron Indirect Manual Assignment Tool", ["jupyter", "execute", "Cameron Indirect Manual Assignment Tool.ipynb"]),
+    ("manual", ["jupyter", "nbconvert", "--to", "notebook", "--execute", "Cameron Indirect Manual Assignment Tool.ipynb", "--inplace"]),
     ("sap_buyers", ["python", "sap buyers.py"]),
     ("sap_dispatching", ["python", "sap dispatching list.py"]),
     ("workload", ["python", "workload_.py"]),
