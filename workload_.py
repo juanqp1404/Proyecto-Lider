@@ -13,8 +13,9 @@ def parse_today_fixed() -> datetime:
     Para pruebas: fija 'hoy' al 2025-11-26 09:45.
     En producción, cambia a: return datetime.now()
     """
-    #return datetime(2025, 11, 26, 9, 45)
-    return datetime.now()
+    # return datetime(2025, 11, 26, 9, 45)
+    return datetime(2025, 12, 2, 9, 45)
+    # return datetime.now()
 
 
 def load_data(
@@ -93,83 +94,52 @@ def clean_percentage_column(series: pd.Series) -> pd.Series:
         / 100.0
     )
 
-
 def create_workload_by_subcategory(
     df_buyers: pd.DataFrame,
     df_dispatching_today: pd.DataFrame,
     subcategory_value: str,
 ) -> pd.DataFrame:
     """
-    Crea df_workload para un subcategory específico (CAM IND NAM o CAM IND LAM).
-    - Filtra buyers por Sub-Category.
-    - Se queda solo con Workload / Availability > 0.
-    - Cuenta SC Number por Buyer Alias en df_dispatching_today.
-    - Trae Availability_SAP desde df_buyers (Workload / Availability).
-    - Añade Shift.
-    - Añade Urgent_enabled manteniendo 'Yes'/'No' de 'Available For Urgencies'.
+    Workload = TODOS buyers con Workload > 0% de la categoría (Yes + No urgencias).
     """
-
     df_b = df_buyers.copy()
-
-    # Normalizar nombres de columnas
     df_b.columns = [c.strip() for c in df_b.columns]
 
-    # Columnas necesarias en df_buyers
-    required_cols = {
-        "Buyer Alias",
-        "Sub-Category",
-        "Workload / Availability",
-        "Shift",
-        "Available For Urgencies",
-    }
-    missing = required_cols - set(df_b.columns)
-    if missing:
-        raise KeyError(f"Faltan columnas en df_buyers: {missing}")
-
-    # Filtrar por subcategoría (CAM IND NAM o CAM IND LAM)
+    # 1. TODOS buyers de la subcategoría
     df_b_sub = df_b[df_b["Sub-Category"] == subcategory_value].copy()
-
-    # Limpiar Workload / Availability como porcentaje numérico
+    
+    # 2. Limpiar ANTES de filtrar
     df_b_sub["Availability_SAP"] = clean_percentage_column(df_b_sub["Workload / Availability"])
-
-    # Filtrar solo los que tengan disponibilidad > 0
-    df_b_sub = df_b_sub[df_b_sub["Availability_SAP"] > 0]
-
-    if df_b_sub.empty:
-        raise ValueError(f"No hay buyers con Availability_SAP > 0 para Sub-Category = {subcategory_value}")
-
-    # Normalizar Available For Urgencies: dejar 'Yes'/'No' limpio en Urgent_enabled # !BUG: Solo salen los que tienen "Yes" en urgent_enabled
     df_b_sub["Urgent_enabled"] = df_b_sub["Available For Urgencies"].astype(str).str.strip()
-
-    # df_dispatching_today: contar SC Number por Buyer Alias
+    
+    # 3. SOLO filtra Workload > 0% (NO toca urgencias)
+    df_b_active = df_b_sub[df_b_sub["Availability_SAP"] > 0].copy()
+    
+    print(f"🔍 {subcategory_value}: {len(df_b_active)} buyers activos, "
+          f"Urgentes: {len(df_b_active[df_b_active['Urgent_enabled']=='Yes'])}, "
+          f"No urgentes: {len(df_b_active[df_b_active['Urgent_enabled']=='No'])}")
+    
+    # 4. Contar SC Number de dispatching (puede estar vacío)
     df_d = df_dispatching_today.copy()
     df_d.columns = [c.strip() for c in df_d.columns]
-
-    required_disp_cols = {"SC Number", "Buyer Alias"}
-    missing_disp = required_disp_cols - set(df_d.columns)
-    if missing_disp:
-        raise KeyError(f"Faltan columnas en df_dispatching: {missing_disp}")
-
+    
     df_counts = (
         df_d.groupby("Buyer Alias", as_index=False)["SC Number"]
         .count()
         .rename(columns={"SC Number": "Count of SC Number"})
     )
-
-    # Merge con buyers filtrados por subcategoría
-    df_workload = df_counts.merge(
-        df_b_sub[["Buyer Alias", "Availability_SAP", "Shift", "Urgent_enabled"]],
-        on="Buyer Alias",
-        how="left",
-    )
-
-    # Quitamos filas donde no se encontró buyer válido
-    df_workload = df_workload.dropna(subset=["Availability_SAP"])
-
-    # Ordenar por carga descendente (opcional)
-    df_workload = df_workload.sort_values("Count of SC Number", ascending=False).reset_index(drop=True)
-
-    return df_workload
+    
+    # 5. MERGE INVERTIDO: parte de ACTIVE BUYERS, agrega counts (0 si no hay)
+    df_workload = df_b_active.merge(
+        df_counts, 
+        on="Buyer Alias", 
+        how="left"
+    ).fillna({"Count of SC Number": 0})
+    
+    # 6. Columnas finales
+    return df_workload.sort_values("Count of SC Number", ascending=False)[
+        ["Buyer Alias", "Count of SC Number", "Availability_SAP", "Shift", "Urgent_enabled"]
+    ].reset_index(drop=True)
 
 
 def main() -> None:
