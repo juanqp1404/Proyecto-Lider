@@ -26,7 +26,7 @@ Path("./logs").mkdir(exist_ok=True)
 
 FLUJOS = [
     ("ariba", ["python", "ariba.py"]),
-    ("manual", ["jupyter", "execute", "Cameron Indirect Manual Assignment Tool.ipynb"]),
+    ("Cameron Indirect Manual Assignment Tool", ["jupyter", "execute", "Cameron Indirect Manual Assignment Tool.ipynb"]),
     ("sap_buyers", ["python", "sap buyers.py"]),
     ("sap_dispatching", ["python", "sap dispatching list.py"]),
     ("workload", ["python", "workload_.py"]),

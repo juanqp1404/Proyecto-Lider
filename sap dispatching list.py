@@ -43,7 +43,7 @@ def run(playwright: Playwright) -> None:
     page.goto("https://slb001.sharepoint.com/sites/BogotaPSC/Lists/SAP%20Dispatching%20List%20January%202019/AllItems.aspx?FilterField1=Author&FilterValue1=Juan%20Quintero&FilterType1=User&sortField=Created&isAscending=false&viewid=ba980fc8%2D7c86%2D4e24%2D8f25%2Dd39c7c4d7aeb")
 
     # Espera que la página termine de cargar antes de buscar elementos
-    page.wait_for_load_state('networkidle', timeout=150000)
+    # page.wait_for_load_state('networkidle')
 
     page.wait_for_selector('role=menuitem[name="Export"]', state="visible", timeout=50000)
     page.get_by_role("menuitem", name="Export").click()
