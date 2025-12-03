@@ -14,8 +14,8 @@ def parse_today_fixed() -> datetime:
     En producción, cambia a: return datetime.now()
     """
     # return datetime(2025, 11, 26, 9, 45)
-    return datetime(2025, 12, 2, 9, 45)
-    # return datetime.now()
+    # return datetime(2025, 12, 2, 9, 45)
+    return datetime.now()
 
 
 def load_data(
