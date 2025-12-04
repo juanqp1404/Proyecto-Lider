@@ -25,11 +25,10 @@ Path("./logs").mkdir(exist_ok=True)
 
 FLUJOS = [
     ("ariba", ["python", "ariba.py"]),
-    # ("manual", ["jupyter", "nbconvert", "--to", "notebook", "--execute", "Cameron Indirect Manual Assignment Tool.ipynb", "--inplace"]),
     ("cameron", ["python", "cameron.py"]),
     ("sap_buyers", ["python", "sap buyers.py"]),
     ("sap_dispatching", ["python", "sap dispatching list.py"]),
-    ("workload", ["python","-u", "workload_.py"]),
+    ("workload", ["python", "-u", "workload_.py"]),
     ("asignaciones", ["python", "asignaciones.py"]),
 ]
 
@@ -37,6 +36,17 @@ MAX_RETRIES = 3
 RETRY_DELAY = 15
 
 def ejecutar_con_retry(nombre: str, comando: list) -> bool:
+    # DEBUG antes de workload
+    if nombre == "workload":
+        logger.info(f"[DEBUG] Verificando dependencias para {nombre}:")
+        sharepoint_dir = Path("./final/sharepoint")
+        logger.info(f"  sharepoint/ existe: {sharepoint_dir.exists()}")
+        if sharepoint_dir.exists():
+            csv_files = list(sharepoint_dir.glob("*.csv"))
+            logger.info(f"  Archivos CSV: {csv_files}")
+        logger.info(f"  sap_buyers.csv: {Path('./final/sharepoint/sap_buyers.csv').exists()}")
+        logger.info(f"  sap_dispatching_list.csv: {Path('./final/sharepoint/sap_dispatching_list.csv').exists()}")
+    
     for intento in range(1, MAX_RETRIES + 1):
         logger.info(f"[INFO] [{nombre}] Intento {intento}/{MAX_RETRIES}")
         
@@ -50,6 +60,8 @@ def ejecutar_con_retry(nombre: str, comando: list) -> bool:
                 return True
             else:
                 logger.error(f"[ERROR] [{nombre}] Return code {resultado.returncode}")
+                if resultado.stdout:
+                    logger.error(f"[STDOUT] {resultado.stdout[:300]}...")
                 if resultado.stderr:
                     logger.error(f"[STDERR] {resultado.stderr[:300]}...")
                 
