@@ -3,6 +3,7 @@ from datetime import datetime, time
 
 import pandas as pd
 
+pd.set_option('display.max_columns', None)
 
 def ensure_output_dir(path: str = "./data/final") -> None:
     os.makedirs(path, exist_ok=True)
