@@ -1,9 +1,21 @@
 import os
 from datetime import datetime, time
-
+from pathlib import Path
 import pandas as pd
 
 pd.set_option('display.max_columns', None)
+
+
+with open("workload_debug.txt", "w", encoding="utf-8") as f:
+    f.write(f"CWD: {os.getcwd()}\n")
+    f.write(f"__file__: {__file__}\n")
+    f.write(f"SCRIPT_DIR: {Path(__file__).parent.resolve()}\n")
+    f.write(f"./data/sharepoint: {Path('./data/sharepoint').exists()}\n")
+    f.write(f"sap_buyers.csv: {Path('./data/sharepoint/sap_buyers.csv').exists()}\n")
+    f.write(f"sap_buyers RESUELTA: {Path('./data/sharepoint/sap_buyers.csv').resolve()}\n")
+    f.write(f"TAMAÑO sap_buyers: {Path('./data/sharepoint/sap_buyers.csv').stat().st_size if Path('./data/sharepoint/sap_buyers.csv').exists() else 'NO'}\n")
+
+print("DEBUG guardado en workload_debug.txt")  # ← ESTO SÍ sale en orquestador
 
 def ensure_output_dir(path: str = "./data/final") -> None:
     os.makedirs(path, exist_ok=True)
@@ -23,9 +35,32 @@ def load_data(
     buyers_path: str = "./data/sharepoint/sap_buyers.csv",
     dispatching_path: str = "./data/sharepoint/sap_dispatching_list.csv",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    df_buyers = pd.read_csv(buyers_path)
-    df_dispatching = pd.read_csv(dispatching_path)
+    
+    with open("load_data_debug.txt", "w", encoding="utf-8") as f:
+        f.write("=== LOAD_DATA DEBUG ===\n")
+        f.write(f"1. cwd: {os.getcwd()}\n")
+        f.write(f"2. buyers_path: {Path(buyers_path).resolve()}\n")
+        
+        # TEST 1: Lectura cruda de bytes
+        try:
+            with open(buyers_path, 'rb') as file:
+                first_bytes = file.read(100)
+                has_bom = first_bytes.startswith(b'\xef\xbb\xbf')
+                f.write(f"3. Primeros 100 bytes (hex): {first_bytes.hex()[:50]}...\n")
+                f.write(f"4. Detecta BOM: {has_bom}\n")  # ← Fix: variable fuera de f-string
+        except Exception as e:
+            f.write(f"3. Error lectura cruda: {e}\n")
+        
+        f.write("=== FIN DEBUG ===\n")
+    
+    print("DEBUG guardado en load_data_debug.txt")
+    
+    # Carga FINAL robusta
+    df_buyers = pd.read_csv(buyers_path, encoding='utf-8-sig', low_memory=False, on_bad_lines='skip')
+    df_dispatching = pd.read_csv(dispatching_path, encoding='utf-8-sig', low_memory=False, on_bad_lines='skip')
+    
     return df_buyers, df_dispatching
+
 
 
 def normalize_dispatching_dates(df_dispatching: pd.DataFrame) -> pd.DataFrame:
