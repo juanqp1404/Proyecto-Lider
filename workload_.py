@@ -130,52 +130,46 @@ def clean_percentage_column(series: pd.Series) -> pd.Series:
         / 100.0
     )
 
-def create_workload_by_subcategory(
-    df_buyers: pd.DataFrame,
-    df_dispatching_today: pd.DataFrame,
-    subcategory_value: str,
-) -> pd.DataFrame:
-    """
-    Workload = TODOS buyers con Workload > 0% de la categoría (Yes + No urgencias).
-    """
+def create_workload_by_subcategory(df_buyers, df_dispatching_today, subcategory_value):
     df_b = df_buyers.copy()
     df_b.columns = [c.strip() for c in df_b.columns]
-
-    # 1. TODOS buyers de la subcategoría
-    df_b_sub = df_b[df_b["Sub-Category"] == subcategory_value].copy()
     
-    # 2. Limpiar ANTES de filtrar
-    df_b_sub["Availability_SAP"] = clean_percentage_column(df_b_sub["Workload / Availability"])
+    # Fix NaN en Sub-Category
+    mask = df_b["Sub-Category"].astype(str).str.strip() == subcategory_value
+    df_b_sub = df_b[mask].copy()
+    
+    if df_b_sub.empty:
+        return pd.DataFrame()
+    
+    # Fix clean_percentage_column
+    series_clean = clean_percentage_column(df_b_sub["Workload / Availability"])
+    df_b_sub["Availability_SAP"] = series_clean.fillna(0)
     df_b_sub["Urgent_enabled"] = df_b_sub["Available For Urgencies"].astype(str).str.strip()
     
-    # 3. SOLO filtra Workload > 0% (NO toca urgencias)
+    # Fix filtro
     df_b_active = df_b_sub[df_b_sub["Availability_SAP"] > 0].copy()
     
-    print(f"🔍 {subcategory_value}: {len(df_b_active)} buyers activos, "
-          f"Urgentes: {len(df_b_active[df_b_active['Urgent_enabled']=='Yes'])}, "
-          f"No urgentes: {len(df_b_active[df_b_active['Urgent_enabled']=='No'])}")
+    if df_b_active.empty:
+        return pd.DataFrame()
     
-    # 4. Contar SC Number de dispatching (puede estar vacío)
-    df_d = df_dispatching_today.copy()
-    df_d.columns = [c.strip() for c in df_d.columns]
+    # Fix groupby vacío
+    if df_dispatching_today.empty:
+        df_counts = pd.DataFrame({"Buyer Alias": [], "Count of SC Number": []})
+    else:
+        df_d = df_dispatching_today.copy()
+        df_d.columns = [c.strip() for c in df_d.columns]
+        df_counts = df_d.groupby("Buyer Alias", as_index=False)["SC Number"].count()
+        df_counts = df_counts.rename(columns={"SC Number": "Count of SC Number"})
     
-    df_counts = (
-        df_d.groupby("Buyer Alias", as_index=False)["SC Number"]
-        .count()
-        .rename(columns={"SC Number": "Count of SC Number"})
-    )
+    # Merge seguro
+    df_workload = df_b_active.merge(df_counts, on="Buyer Alias", how="left")
+    df_workload["Count of SC Number"] = df_workload["Count of SC Number"].fillna(0)
     
-    # 5. MERGE INVERTIDO: parte de ACTIVE BUYERS, agrega counts (0 si no hay)
-    df_workload = df_b_active.merge(
-        df_counts, 
-        on="Buyer Alias", 
-        how="left"
-    ).fillna({"Count of SC Number": 0})
-    
-    # 6. Columnas finales
-    return df_workload.sort_values("Count of SC Number", ascending=False)[
-        ["Buyer Alias", "Count of SC Number", "Availability_SAP", "Shift", "Urgent_enabled"]
-    ].reset_index(drop=True)
+    cols = ["Buyer Alias", "Count of SC Number", "Availability_SAP", "Shift", "Urgent_enabled"]
+    return df_workload[cols].sort_values("Count of SC Number", ascending=False).reset_index(drop=True)
+
+
+
 
 
 def main() -> None:
