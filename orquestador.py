@@ -32,7 +32,7 @@ FLUJOS = [
     ("asignaciones", ["python", "asignaciones.py"]),
 ]
 
-MAX_RETRIES = 1
+MAX_RETRIES = 5
 RETRY_DELAY = 15
 
 def ejecutar_con_retry(nombre: str, comando: list) -> bool:
