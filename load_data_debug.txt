@@ -1,0 +1,6 @@
+=== LOAD_DATA DEBUG ===
+1. cwd: C:\Users\JQuintero27\OneDrive - SLB\SLB\PROYECTO LIDER
+2. buyers_path: C:\Users\JQuintero27\OneDrive - SLB\SLB\PROYECTO LIDER\data\sharepoint\sap_buyers.csv
+3. Primeros 100 bytes (hex): efbbbf224275796572222c22427579657220416c696173222c...
+4. Detecta BOM: True
+=== FIN DEBUG ===

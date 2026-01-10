@@ -1,0 +1,7 @@
+CWD: C:\Users\JQuintero27\OneDrive - SLB\SLB\PROYECTO LIDER
+__file__: C:\Users\JQuintero27\OneDrive - SLB\SLB\PROYECTO LIDER\workload_.py
+SCRIPT_DIR: C:\Users\JQuintero27\OneDrive - SLB\SLB\PROYECTO LIDER
+./data/sharepoint: True
+sap_buyers.csv: True
+sap_buyers RESUELTA: C:\Users\JQuintero27\OneDrive - SLB\SLB\PROYECTO LIDER\data\sharepoint\sap_buyers.csv
+TAMAÑO sap_buyers: 5612
