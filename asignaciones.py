@@ -10,6 +10,17 @@ from datetime import datetime, time
 from typing import List, Tuple
 import pandas as pd
 
+import os
+import re
+from datetime import datetime, time
+from typing import List, Tuple
+import pandas as pd
+
+# ========== AGREGAR ESTAS 3 LÍNEAS ==========
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(SCRIPT_DIR)
+print(f"[DEBUG] Working directory: {os.getcwd()}")
+
 # ------------------ UTILIDADES GENERALES ------------------
 
 def ensure_output_dir(path: str = "./data/final") -> None:
@@ -62,7 +73,7 @@ def split_special_prs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
 def load_existing_workload(
     dispatching_path: str = "./data/sharepoint/sap_dispatching_list.csv",
-    execution_date: datetime = None  # ← NUEVO
+    execution_date: datetime = None
 ) -> pd.DataFrame:
     """
     Carga dispatching list existente y cuenta solo PRs del día actual.
@@ -70,6 +81,10 @@ def load_existing_workload(
     """
     if execution_date is None:
         execution_date = datetime.now()
+    
+    # Convertir a ruta absoluta
+    if not os.path.isabs(dispatching_path):
+        dispatching_path = os.path.join(SCRIPT_DIR, dispatching_path)
     
     try:
         df_dispatch = pd.read_csv(dispatching_path, encoding='utf-8-sig')
@@ -80,44 +95,80 @@ def load_existing_workload(
             print("⚠️ sap_dispatching_list.csv no tiene columna 'Buyer Alias'")
             return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
         
-        # Asegurar columna URGENT
+        # Asegurar columna Urgent? (tu CSV usa este nombre)
         if 'Urgent?' not in df_dispatch.columns:
             print("⚠️ sap_dispatching_list.csv no tiene columna 'Urgent?', asumiendo 0")
             df_dispatch['Urgent?'] = 0
         
-        # ← NUEVO: Filtrar solo PRs del día actual
-        # Buscar columna de fecha (puede ser 'Creation Date', 'Date', 'Created', etc.)
-        date_columns = [col for col in df_dispatch.columns 
-                       if 'date' in col.lower() or 'created' in col.lower() or 'timestamp' in col.lower()]
-        
-        if date_columns:
-            date_col = date_columns[0]  # Usar la primera columna de fecha encontrada
+        # ← FILTRAR POR FECHA CON FORMATO EXPLÍCITO
+        if 'Created' in df_dispatch.columns:
+            date_col = 'Created'
             print(f"📅 Filtrando por fecha usando columna: '{date_col}'")
             
-            # Convertir a datetime
-            df_dispatch[date_col] = pd.to_datetime(df_dispatch[date_col], errors='coerce')
+            # Parsear formato "1/9/2026 2:14 PM" (formato americano con AM/PM)
+            try:
+                df_dispatch[date_col] = pd.to_datetime(
+                    df_dispatch[date_col], 
+                    format='%m/%d/%Y %I:%M %p',  # ← Formato explícito
+                    errors='coerce'
+                )
+                
+                # Verificar cuántos se parsearon
+                parsed_count = df_dispatch[date_col].notna().sum()
+                total_count = len(df_dispatch)
+                
+                if parsed_count == 0:
+                    print(f"⚠️ No se pudo parsear ninguna fecha de {total_count} registros")
+                    print("   → Usando todos los registros (sin filtro)")
+                else:
+                    print(f"   ✓ Parseadas {parsed_count}/{total_count} fechas correctamente")
+                    
+                    # Filtrar solo registros del día actual
+                    today_start = execution_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    today_end = execution_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                    
+                    df_dispatch = df_dispatch[
+                        (df_dispatch[date_col] >= today_start) & 
+                        (df_dispatch[date_col] <= today_end)
+                    ].copy()
+                    
+                    print(f"   → {len(df_dispatch)} PRs del día {execution_date.date()}")
             
-            # Filtrar solo registros del día actual
-            today_start = execution_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            today_end = execution_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            df_dispatch = df_dispatch[
-                (df_dispatch[date_col] >= today_start) & 
-                (df_dispatch[date_col] <= today_end)
-            ].copy()
-            
-            print(f"   → {len(df_dispatch)} PRs del día {execution_date.date()}")
+            except Exception as e:
+                print(f"⚠️ Error parseando fechas: {e}")
+                print("   → Usando todos los registros (sin filtro)")
+        
         else:
-            print("⚠️ No se encontró columna de fecha en sap_dispatching_list.csv")
-            print("   Columnas disponibles:", list(df_dispatch.columns))
-            print("   Usando todos los registros (NO RECOMENDADO - incluye histórico)")
+            # Buscar columnas alternativas
+            date_columns = [col for col in df_dispatch.columns 
+                           if 'date' in col.lower() or 'created' in col.lower() or 'timestamp' in col.lower()]
+            
+            if date_columns:
+                date_col = date_columns[0]
+                print(f"📅 Columna 'Created' no encontrada, usando: '{date_col}'")
+                
+                df_dispatch[date_col] = pd.to_datetime(df_dispatch[date_col], errors='coerce')
+                
+                today_start = execution_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                today_end = execution_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                
+                df_dispatch = df_dispatch[
+                    (df_dispatch[date_col] >= today_start) & 
+                    (df_dispatch[date_col] <= today_end)
+                ].copy()
+                
+                print(f"   → {len(df_dispatch)} PRs del día {execution_date.date()}")
+            else:
+                print("⚠️ No se encontró columna de fecha")
+                print("   Columnas disponibles:", list(df_dispatch.columns))
+                print("   → Usando todos los registros (NO RECOMENDADO)")
         
         # Si no hay registros del día actual
         if df_dispatch.empty:
             print("ℹ️ No hay PRs asignados hoy, todos los buyers inician desde 0")
             return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
         
-        # Contar PRs por buyer
+        # Contar PRs por buyer (usando 'Urgent?' en lugar de 'URGENT')
         current_load = df_dispatch.groupby('Buyer Alias').agg({
             'Urgent?': ['sum', 'count']  # sum=urgentes, count=total
         }).reset_index()
@@ -126,8 +177,9 @@ def load_existing_workload(
         return current_load
         
     except FileNotFoundError:
-        print("⚠️ sap_dispatching_list.csv no encontrado, asumiendo workload 0 para todos.")
+        print("⚠️ sap_dispatching_list.csv no encontrado, asumiendo workload 0")
         return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
+    
     except Exception as e:
         print(f"⚠️ Error cargando dispatching list: {e}")
         import traceback
