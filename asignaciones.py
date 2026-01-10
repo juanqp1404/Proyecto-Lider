@@ -102,8 +102,9 @@ def load_existing_workload(
         
         # ← FILTRAR POR FECHA CON FORMATO EXPLÍCITO
         if 'Created' in df_dispatch.columns:
+            print("df_dispatch columns:", list(df_dispatch.columns))
             date_col = 'Created'
-            print(f"📅 Filtrando por fecha usando columna: '{date_col}'")
+            print(f"📅 Filtrando por fecha usando columna: {date_col}")
             
             # Parsear formato "1/9/2026 2:14 PM" (formato americano con AM/PM)
             try:
