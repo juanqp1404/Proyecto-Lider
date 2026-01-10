@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-asignaciones.py - Versión con Weighted Round-Robin
-Considera 'Workload / Availability' para distribución proporcional.
+asignaciones.py - Versión con Weighted Round-Robin + Carga Existente (solo día actual)
+Considera 'Workload / Availability' y PRs ya asignados HOY en sap_dispatching_list.csv
 """
 
 import os
@@ -21,7 +21,7 @@ def parse_today_fixed() -> datetime:
     En producción, cambia a: return datetime.now()
     """
     #return datetime(2025, 11, 26, 9, 45)
-    # return datetime(2025, 12, 2, 9, 45)
+    # return datetime(2026, 1, 8, 17, 45)
     return datetime.now()
 
 def load_workloads(
@@ -57,6 +57,82 @@ def split_special_prs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     df_special = df[mask_special].copy()
     df_normal = df[~mask_special].copy()
     return df_normal, df_special
+
+# ------------------ CARGA EXISTENTE CON FILTRO DE FECHA (MODIFICADO) ------------------
+
+def load_existing_workload(
+    dispatching_path: str = "./data/sharepoint/sap_dispatching_list.csv",
+    execution_date: datetime = None  # ← NUEVO
+) -> pd.DataFrame:
+    """
+    Carga dispatching list existente y cuenta solo PRs del día actual.
+    Retorna DataFrame con: Buyer Alias, current_urgent_prs, current_total_prs
+    """
+    if execution_date is None:
+        execution_date = datetime.now()
+    
+    try:
+        df_dispatch = pd.read_csv(dispatching_path, encoding='utf-8-sig')
+        df_dispatch.columns = [c.strip() for c in df_dispatch.columns]
+        
+        # Verificar columnas necesarias
+        if 'Buyer Alias' not in df_dispatch.columns:
+            print("⚠️ sap_dispatching_list.csv no tiene columna 'Buyer Alias'")
+            return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
+        
+        # Asegurar columna URGENT
+        if 'Urgent?' not in df_dispatch.columns:
+            print("⚠️ sap_dispatching_list.csv no tiene columna 'Urgent?', asumiendo 0")
+            df_dispatch['Urgent?'] = 0
+        
+        # ← NUEVO: Filtrar solo PRs del día actual
+        # Buscar columna de fecha (puede ser 'Creation Date', 'Date', 'Created', etc.)
+        date_columns = [col for col in df_dispatch.columns 
+                       if 'date' in col.lower() or 'created' in col.lower() or 'timestamp' in col.lower()]
+        
+        if date_columns:
+            date_col = date_columns[0]  # Usar la primera columna de fecha encontrada
+            print(f"📅 Filtrando por fecha usando columna: '{date_col}'")
+            
+            # Convertir a datetime
+            df_dispatch[date_col] = pd.to_datetime(df_dispatch[date_col], errors='coerce')
+            
+            # Filtrar solo registros del día actual
+            today_start = execution_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = execution_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            df_dispatch = df_dispatch[
+                (df_dispatch[date_col] >= today_start) & 
+                (df_dispatch[date_col] <= today_end)
+            ].copy()
+            
+            print(f"   → {len(df_dispatch)} PRs del día {execution_date.date()}")
+        else:
+            print("⚠️ No se encontró columna de fecha en sap_dispatching_list.csv")
+            print("   Columnas disponibles:", list(df_dispatch.columns))
+            print("   Usando todos los registros (NO RECOMENDADO - incluye histórico)")
+        
+        # Si no hay registros del día actual
+        if df_dispatch.empty:
+            print("ℹ️ No hay PRs asignados hoy, todos los buyers inician desde 0")
+            return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
+        
+        # Contar PRs por buyer
+        current_load = df_dispatch.groupby('Buyer Alias').agg({
+            'Urgent?': ['sum', 'count']  # sum=urgentes, count=total
+        }).reset_index()
+        
+        current_load.columns = ['Buyer Alias', 'current_urgent_prs', 'current_total_prs']
+        return current_load
+        
+    except FileNotFoundError:
+        print("⚠️ sap_dispatching_list.csv no encontrado, asumiendo workload 0 para todos.")
+        return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
+    except Exception as e:
+        print(f"⚠️ Error cargando dispatching list: {e}")
+        import traceback
+        traceback.print_exc()
+        return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
 
 # ------------------ SHIFTS Y URGENCIAS ------------------
 
@@ -118,7 +194,7 @@ def filter_buyers_by_urgency(df_workload: pd.DataFrame, urgent_required: bool) -
         df = df[df["Urgent_enabled"].str.upper() == "YES"].copy()
     return df.reset_index(drop=True)
 
-# ------------------ WEIGHTED ROUND ROBIN (NUEVO) ------------------
+# ------------------ WEIGHTED ROUND ROBIN CON CARGA ACTUAL ------------------
 
 def extract_capacity_weight(workload_str: str, default: float = 1.0) -> float:
     """
@@ -146,15 +222,17 @@ def extract_capacity_weight(workload_str: str, default: float = 1.0) -> float:
 def weighted_round_robin_assign(
     tasks: pd.DataFrame,
     buyers_df: pd.DataFrame,
+    current_load_df: pd.DataFrame,
+    is_urgent: bool = False,
     buyer_column_name: str = "BUYER",
 ) -> pd.DataFrame:
     """
-    Asigna buyers proporcionalmente según 'Workload / Availability'.
+    Asigna buyers proporcionalmente considerando:
+    1. 'Workload / Availability' (capacidad base)
+    2. Carga actual de PRs del día desde sap_dispatching_list.csv
     
-    NUEVO ALGORITMO:
-    1. Calcular PRs por buyer basado en peso relativo
-    2. Asignar exactamente esa cantidad a cada buyer
-    3. Distribuir residuo equitativamente
+    Si is_urgent=True, considera solo PRs urgentes existentes.
+    Si is_urgent=False, considera carga total.
     """
     if buyers_df.empty:
         raise ValueError("No hay buyers disponibles para asignar.")
@@ -179,29 +257,71 @@ def weighted_round_robin_assign(
     if buyers_df.empty:
         raise ValueError("Todos los buyers tienen capacidad 0%.")
     
-    # Calcular distribución proporcional EXACTA
+    # Merge con carga actual
+    buyers_df = buyers_df.merge(
+        current_load_df,
+        on='Buyer Alias',
+        how='left'
+    )
+    
+    # Rellenar NaN (buyers sin carga previa)
+    buyers_df['current_urgent_prs'] = buyers_df['current_urgent_prs'].fillna(0).astype(int)
+    buyers_df['current_total_prs'] = buyers_df['current_total_prs'].fillna(0).astype(int)
+    
+    # Calcular capacidad disponible ajustada
+    if is_urgent:
+        # Para urgentes: considerar solo carga urgente previa
+        buyers_df['current_load_factor'] = buyers_df['current_urgent_prs']
+    else:
+        # Para normales: considerar carga total
+        buyers_df['current_load_factor'] = buyers_df['current_total_prs']
+    
+    # Ajustar peso según carga actual (menos carga = más peso)
+    max_load = buyers_df['current_load_factor'].max()
+    
+    if max_load > 0:
+        buyers_df['load_normalized'] = buyers_df['current_load_factor'] / max_load
+        # Peso efectivo: reducir proporcionalmente según carga
+        # Si tiene 100% de carga máxima, peso efectivo → 0.25× capacidad
+        # Si tiene 0% de carga, peso efectivo → 1.0× capacidad
+        buyers_df['effective_weight'] = buyers_df['capacity_weight'] * (1.25 - buyers_df['load_normalized'])
+    else:
+        # Nadie tiene carga previa, usar capacidad normal
+        buyers_df['effective_weight'] = buyers_df['capacity_weight']
+    
+    # Asegurar pesos positivos
+    buyers_df['effective_weight'] = buyers_df['effective_weight'].clip(lower=0.1)
+    
+    # Calcular distribución proporcional con pesos ajustados
     total_prs = len(tasks)
-    total_weight = buyers_df['capacity_weight'].sum()
+    total_weight = buyers_df['effective_weight'].sum()
     
     buyers_df['prs_allocated'] = (
-        (buyers_df['capacity_weight'] / total_weight) * total_prs
+        (buyers_df['effective_weight'] / total_weight) * total_prs
     ).round().astype(int)
     
-    # Ajustar residuo (por redondeo)
+    # Ajustar residuo
     diff = total_prs - buyers_df['prs_allocated'].sum()
     
     if diff > 0:
-        # Asignar PRs extra a buyers con mayor peso
-        buyers_sorted = buyers_df.sort_values('capacity_weight', ascending=False)
+        # Asignar PRs extra a buyers con MENOR carga actual
+        buyers_sorted = buyers_df.sort_values('current_load_factor', ascending=True)
         for i in range(diff):
             idx = buyers_sorted.index[i % len(buyers_sorted)]
             buyers_df.loc[idx, 'prs_allocated'] += 1
     elif diff < 0:
-        # Quitar PRs de buyers con menor peso
-        buyers_sorted = buyers_df.sort_values('capacity_weight', ascending=True)
+        # Quitar PRs de buyers con MAYOR carga actual
+        buyers_sorted = buyers_df.sort_values('current_load_factor', ascending=False)
         for i in range(abs(diff)):
             idx = buyers_sorted.index[i % len(buyers_sorted)]
             buyers_df.loc[idx, 'prs_allocated'] = max(0, buyers_df.loc[idx, 'prs_allocated'] - 1)
+    
+    # DEBUG: Mostrar distribución planificada
+    print(f"\n--- Distribución {'URGENTES' if is_urgent else 'NORMALES'} ({total_prs} PRs) ---")
+    for _, row in buyers_df.iterrows():
+        print(f"{row['Buyer Alias']:15} | Carga hoy: {int(row['current_load_factor']):2} | "
+              f"Capacidad: {row['capacity_weight']:.2f} | Peso efectivo: {row['effective_weight']:.2f} | "
+              f"Asignar ahora: {int(row['prs_allocated'])}")
     
     # Asignar PRs secuencialmente
     pr_index = 0
@@ -217,27 +337,27 @@ def weighted_round_robin_assign(
     return tasks
 
 
-
 # ------------------ LÓGICA PRINCIPAL DE ASIGNACIÓN ------------------
 
 def assign_buyers_for_region(
     df_resultados_region: pd.DataFrame,
     df_workload_region: pd.DataFrame,
     execution_time: time,
-    df_buyers_full: pd.DataFrame,  # ← NUEVO: CSV completo
+    df_buyers_full: pd.DataFrame,
+    current_load_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Asigna buyers para una región (NAM o LAM):
     - Separa URGENT=1 y URGENT=0.
     - URGENT=1 -> solo buyers con Available For Urgencies == 'Yes'.
     - Respeta shift: solo buyers activos en la hora de ejecución.
-    - Reparte proporcionalmente según 'Workload / Availability' (weighted round-robin).
+    - Reparte proporcionalmente considerando carga existente del día.
     """
     df = df_resultados_region.copy()
     df.columns = [c.strip() for c in df.columns]
     
     if "URGENT" not in df.columns:
-        raise KeyError("df_resultados_region debe contener la columna 'URGENT'.")
+        raise KeyError("df_resultados_region debe contener la columna 'Urgent?'.")
     
     if "BUYER" not in df.columns:
         df["BUYER"] = None
@@ -270,21 +390,25 @@ def assign_buyers_for_region(
             "Hay solicitudes URGENT=1 pero ningún buyer habilitado para urgencias en el shift actual."
         )
     
-    # Asignar URGENT=1 (CON PESOS)
+    # Asignar URGENT=1 (CON PESOS + CARGA ACTUAL DEL DÍA)
     if not df_urgent.empty:
         df_urgent_assigned = weighted_round_robin_assign(
             tasks=df_urgent,
             buyers_df=df_buyers_urgent,
+            current_load_df=current_load_df,
+            is_urgent=True,  # ← Considera solo carga urgente previa del día
             buyer_column_name="BUYER",
         )
     else:
         df_urgent_assigned = df_urgent
     
-    # Asignar URGENT=0 (CON PESOS) -> todos los buyers del shift
+    # Asignar URGENT=0 (CON PESOS + CARGA ACTUAL DEL DÍA)
     if not df_non_urgent.empty:
         df_non_urgent_assigned = weighted_round_robin_assign(
             tasks=df_non_urgent,
             buyers_df=df_buyers_region,
+            current_load_df=current_load_df,
+            is_urgent=False,  # ← Considera carga total previa del día
             buyer_column_name="BUYER",
         )
     else:
@@ -311,9 +435,21 @@ def main() -> None:
     # Cargar workloads generados previamente
     df_workload_lam, df_workload_nam = load_workloads()
     
-    # ← NUEVO: Cargar CSV completo de buyers
+    # Cargar CSV completo de buyers
     df_buyers_full = pd.read_csv("./data/sharepoint/sap_buyers.csv", encoding='utf-8-sig')
     df_buyers_full.columns = [c.strip() for c in df_buyers_full.columns]
+    
+    # ← MODIFICADO: Cargar carga actual solo del día
+    current_load_df = load_existing_workload(
+        "./data/sharepoint/sap_dispatching_list.csv",
+        execution_date=now  # ← Solo PRs de hoy
+    )
+    
+    print("\n=== CARGA ACTUAL DE BUYERS (solo PRs de hoy) ===")
+    if not current_load_df.empty:
+        print(current_load_df.to_string(index=False))
+    else:
+        print("(No hay carga previa hoy, todos los buyers inician desde 0)")
     
     # Cargar resultados base
     df_resultados = load_resultados("./data/Resultado.xlsx")
@@ -322,7 +458,7 @@ def main() -> None:
     df_resultados_normal, df_special = split_special_prs(df_resultados)
     special_path = "./data/final/ps_special.csv"
     df_special.to_csv(special_path, index=False, encoding="utf-8")
-    print(f"Exportado especiales: {special_path}")
+    print(f"\nExportado especiales: {special_path}")
     
     df_resultados_normal.columns = [c.strip() for c in df_resultados_normal.columns]
     
@@ -337,40 +473,42 @@ def main() -> None:
     df_nam = df_resultados_normal[mask_nam].copy()
     df_lam = df_resultados_normal[mask_lam].copy()
     
-    # Asignar para NAM (CON PESOS)
+    # Asignar para NAM (CON PESOS + CARGA ACTUAL DEL DÍA)
     df_nam_assigned = assign_buyers_for_region(
         df_resultados_region=df_nam,
         df_workload_region=df_workload_nam,
         execution_time=execution_time,
         df_buyers_full=df_buyers_full,
+        current_load_df=current_load_df,
     )
     
-    # Asignar para LAM (CON PESOS)
+    # Asignar para LAM (CON PESOS + CARGA ACTUAL DEL DÍA)
     df_lam_assigned = assign_buyers_for_region(
         df_resultados_region=df_lam,
         df_workload_region=df_workload_lam,
         execution_time=execution_time,
         df_buyers_full=df_buyers_full,
+        current_load_df=current_load_df,
     )
     
     # Exportar resultados
-    nam_out = "./data/final/assignments_cam_ind_nam.csv"
-    lam_out = "./data/final/assignments_cam_ind_lam.csv"
+    nam_out = "./data/final/CAM_IND_NAM.csv"
+    lam_out = "./data/final/CAM_IND_LAM.csv"
     
     df_nam_assigned.to_csv(nam_out, index=False, encoding="utf-8")
     df_lam_assigned.to_csv(lam_out, index=False, encoding="utf-8")
     
-    print(f"✅ Exportado assignments NAM: {nam_out}")
+    print(f"\n✅ Exportado assignments NAM: {nam_out}")
     print(f"✅ Exportado assignments LAM: {lam_out}")
     
     # Validar distribución
-    print("\n=== DISTRIBUCIÓN NAM ===")
+    print("\n=== DISTRIBUCIÓN FINAL NAM ===")
     if not df_nam_assigned.empty:
         print(df_nam_assigned['BUYER'].value_counts().sort_index())
     else:
         print("(Sin PRs para NAM)")
     
-    print("\n=== DISTRIBUCIÓN LAM ===")
+    print("\n=== DISTRIBUCIÓN FINAL LAM ===")
     if not df_lam_assigned.empty:
         print(df_lam_assigned['BUYER'].value_counts().sort_index())
     else:

@@ -1,7 +1,0 @@
-CWD: C:\Users\xanti\Desktop\cameron
-__file__: C:\Users\xanti\Desktop\cameron\workload_.py
-SCRIPT_DIR: C:\Users\xanti\Desktop\cameron
-./data/sharepoint: True
-sap_buyers.csv: True
-sap_buyers RESUELTA: C:\Users\xanti\Desktop\cameron\data\sharepoint\sap_buyers.csv
-TAMAÑO sap_buyers: 5372

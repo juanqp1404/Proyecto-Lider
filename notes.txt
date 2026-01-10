@@ -1,1 +1,0 @@
-ariba.py -> Cameron Indirect Manual Assignment Tool.ipyn -> sap_buyers.py -> sap_dispatching_list.py -> workload_.ipynb -> asignaciones.py
