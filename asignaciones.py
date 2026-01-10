@@ -32,8 +32,8 @@ def parse_today_fixed() -> datetime:
     En producción, cambia a: return datetime.now()
     """
     #return datetime(2025, 11, 26, 9, 45)
-    return datetime(2026, 1, 9, 17, 45)
-    #return datetime.now()
+    #return datetime(2026, 1, 9, 17, 45)
+    return datetime.now()
 
 def load_workloads(
     lam_path: str = "./data/final/workload_cam_ind_lam.csv",
@@ -104,7 +104,7 @@ def load_existing_workload(
         if 'Created' in df_dispatch.columns:
             print("df_dispatch columns:", list(df_dispatch.columns))
             date_col = 'Created'
-            print(f"📅 Filtrando por fecha usando columna: {date_col}")
+            print(f"Filtrando por fecha usando columna: {date_col}")
             
             # Parsear formato "1/9/2026 2:14 PM" (formato americano con AM/PM)
             try:
@@ -119,10 +119,10 @@ def load_existing_workload(
                 total_count = len(df_dispatch)
                 
                 if parsed_count == 0:
-                    print(f"⚠️ No se pudo parsear ninguna fecha de {total_count} registros")
-                    print("   → Usando todos los registros (sin filtro)")
+                    print(f"No se pudo parsear ninguna fecha de {total_count} registros")
+                    print("Usando todos los registros (sin filtro)")
                 else:
-                    print(f"   ✓ Parseadas {parsed_count}/{total_count} fechas correctamente")
+                    print(f"Parseadas {parsed_count}/{total_count} fechas correctamente")
                     
                     # Filtrar solo registros del día actual
                     today_start = execution_date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -133,11 +133,11 @@ def load_existing_workload(
                         (df_dispatch[date_col] <= today_end)
                     ].copy()
                     
-                    print(f"   → {len(df_dispatch)} PRs del día {execution_date.date()}")
+                    print(f"{len(df_dispatch)} PRs del día {execution_date.date()}")
             
             except Exception as e:
-                print(f"⚠️ Error parseando fechas: {e}")
-                print("   → Usando todos los registros (sin filtro)")
+                print(f"Error parseando fechas: {e}")
+                print("Usando todos los registros (sin filtro)")
         
         else:
             # Buscar columnas alternativas
@@ -146,7 +146,7 @@ def load_existing_workload(
             
             if date_columns:
                 date_col = date_columns[0]
-                print(f"📅 Columna 'Created' no encontrada, usando: '{date_col}'")
+                print(f"Columna 'Created' no encontrada, usando: '{date_col}'")
                 
                 df_dispatch[date_col] = pd.to_datetime(df_dispatch[date_col], errors='coerce')
                 
@@ -160,13 +160,13 @@ def load_existing_workload(
                 
                 print(f"   → {len(df_dispatch)} PRs del día {execution_date.date()}")
             else:
-                print("⚠️ No se encontró columna de fecha")
-                print("   Columnas disponibles:", list(df_dispatch.columns))
-                print("   → Usando todos los registros (NO RECOMENDADO)")
+                print("No se encontró columna de fecha")
+                print("Columnas disponibles:", list(df_dispatch.columns))
+                print("Usando todos los registros (NO RECOMENDADO)")
         
         # Si no hay registros del día actual
         if df_dispatch.empty:
-            print("ℹ️ No hay PRs asignados hoy, todos los buyers inician desde 0")
+            print("No hay PRs asignados hoy, todos los buyers inician desde 0")
             return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
         
         # Contar PRs por buyer (usando 'Urgent?' en lugar de 'URGENT')
@@ -178,11 +178,11 @@ def load_existing_workload(
         return current_load
         
     except FileNotFoundError:
-        print("⚠️ sap_dispatching_list.csv no encontrado, asumiendo workload 0")
+        print("sap_dispatching_list.csv no encontrado, asumiendo workload 0")
         return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
     
     except Exception as e:
-        print(f"⚠️ Error cargando dispatching list: {e}")
+        print(f"Error cargando dispatching list: {e}")
         import traceback
         traceback.print_exc()
         return pd.DataFrame(columns=['Buyer Alias', 'current_urgent_prs', 'current_total_prs'])
@@ -551,8 +551,8 @@ def main() -> None:
     df_nam_assigned.to_csv(nam_out, index=False, encoding="utf-8")
     df_lam_assigned.to_csv(lam_out, index=False, encoding="utf-8")
     
-    print(f"\n✅ Exportado assignments NAM: {nam_out}")
-    print(f"✅ Exportado assignments LAM: {lam_out}")
+    print(f"Exportado assignments NAM: {nam_out}")
+    print(f"Exportado assignments LAM: {lam_out}")
     
     # Validar distribución
     print("\n=== DISTRIBUCIÓN FINAL NAM ===")

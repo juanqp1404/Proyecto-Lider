@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 Path("./logs").mkdir(exist_ok=True)
 
 FLUJOS = [
-    ("ariba", ["python", "ariba.py"]),
-    ("cameron", ["python", "cameron.py"]),
+   ("ariba", ["python", "ariba.py"]),
+   ("cameron", ["python", "cameron.py"]),
     ("sap_buyers", ["python", "sap buyers.py"]),
     ("sap_dispatching", ["python", "sap dispatching list.py"]),
     ("workload", ["python", "-u", "workload_.py"]),
