@@ -64,7 +64,13 @@ def calcular_domingo_asociado(fecha=None):
 
 def run(playwright: Playwright) -> None:
     fecha_filtrado = calcular_domingo_asociado()
-    user_data_dir = r"C:/Users/JQuintero27/AppData/Local/Microsoft/Edge/User Data"
+    # user_data_dir = r"C:/Users/JQuintero27/AppData/Local/Microsoft/Edge/User Data"
+    user_data_dir = os.path.join(
+    os.getenv('LOCALAPPDATA'),  # C:/Users/{usuario}/AppData/Local
+    'Microsoft',
+    'Edge',
+    'User Data'
+    )
     carpeta_actual = "./"
     # browser = playwright.chromium.launch(headless=False,executable_path='C:/Program Files/Google/Chrome/Application/chrome.exe')
     context = playwright.chromium.launch_persistent_context(user_data_dir, headless=False, channel="msedge")
