@@ -4,4 +4,4 @@ SCRIPT_DIR: C:\Users\JQuintero27\OneDrive - SLB\Documents\Codes\Cameron Assignme
 ./data/sharepoint: True
 sap_buyers.csv: True
 sap_buyers RESUELTA: C:\Users\JQuintero27\OneDrive - SLB\Documents\Codes\Cameron Assignment\Cameron Tool\data\sharepoint\sap_buyers.csv
-TAMAÑO sap_buyers: 5679
+TAMAÑO sap_buyers: 5350
