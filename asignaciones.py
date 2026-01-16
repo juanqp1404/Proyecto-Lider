@@ -32,8 +32,8 @@ def parse_today_fixed() -> datetime:
     En producción, cambia a: return datetime.now()
     """
     #return datetime(2025, 11, 26, 9, 45)
-    #return datetime(2026, 1, 9, 17, 45)
-    return datetime.now()
+    return datetime(2026, 1, 15, 7, 45)
+    # return datetime.now()
 
 def load_workloads(
     lam_path: str = "./data/final/workload_cam_ind_lam.csv",
@@ -223,17 +223,23 @@ def is_in_shift(current_time: time, start: time, end: time) -> bool:
     else:
         return current_time >= start or current_time < end
 
+# def filter_buyers_by_shift(df_workload: pd.DataFrame, execution_time: time) -> pd.DataFrame:
+#     """
+#     Filtra buyers que estén dentro de su shift actual según la hora de ejecución.
+#     """
+#     df = df_workload.copy()
+#     available_rows = []
+#     for idx, row in df.iterrows():
+#         start, end = parse_shift_to_range(row.get("Shift"))
+#         if is_in_shift(execution_time, start, end):
+#             available_rows.append(idx)
+#     df_available = df.loc[available_rows].reset_index(drop=True)
+#     return df_available
 def filter_buyers_by_shift(df_workload: pd.DataFrame, execution_time: time) -> pd.DataFrame:
     """
     Filtra buyers que estén dentro de su shift actual según la hora de ejecución.
     """
-    df = df_workload.copy()
-    available_rows = []
-    for idx, row in df.iterrows():
-        start, end = parse_shift_to_range(row.get("Shift"))
-        if is_in_shift(execution_time, start, end):
-            available_rows.append(idx)
-    df_available = df.loc[available_rows].reset_index(drop=True)
+    df_available = df_workload.copy()
     return df_available
 
 def filter_buyers_by_urgency(df_workload: pd.DataFrame, urgent_required: bool) -> pd.DataFrame:
