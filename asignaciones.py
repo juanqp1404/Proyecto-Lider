@@ -31,9 +31,8 @@ def parse_today_fixed() -> datetime:
     Para pruebas: fija 'hoy' al 2025-11-26 09:45.
     En producción, cambia a: return datetime.now()
     """
-    #return datetime(2025, 11, 26, 9, 45)
-    return datetime(2026, 1, 15, 7, 45)
-    # return datetime.now()
+    
+    return datetime.now()
 
 def load_workloads(
     lam_path: str = "./data/final/workload_cam_ind_lam.csv",
