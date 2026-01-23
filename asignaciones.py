@@ -342,7 +342,7 @@ def weighted_round_robin_assign(
         # Peso efectivo: reducir proporcionalmente según carga
         # Si tiene 100% de carga máxima, peso efectivo → 0.25× capacidad
         # Si tiene 0% de carga, peso efectivo → 1.0× capacidad
-        buyers_df['effective_weight'] = buyers_df['capacity_weight'] * (1.25 - buyers_df['load_normalized'])
+        buyers_df['effective_weight'] = buyers_df['capacity_weight'] * (2 - buyers_df['load_normalized'])
     else:
         # Nadie tiene carga previa, usar capacidad normal
         buyers_df['effective_weight'] = buyers_df['capacity_weight']
