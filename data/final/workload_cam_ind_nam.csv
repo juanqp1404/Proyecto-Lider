@@ -1,8 +1,9 @@
 Buyer Alias,Count of SC Number,Availability_SAP,Shift,Urgent_enabled
-sperez40,0.0,1.0,7 to 5,Yes
-JSalgado43,0.0,1.0,7 to 5,Yes
-AVasquez24,0.0,1.0,7 to 5,Yes
-cchaparro4,0.0,1.0,7 to 5,Yes
-TBecerra,0.0,0.75,7 to 5,Yes
-SCepeda2,0.0,1.0,7 to 5,Yes
-KNarvaez2,0.0,1.0,7 to 5,Yes
+JSalgado43,10,1.0,7 to 5,Yes
+AVasquez24,10,1.0,7 to 5,Yes
+CChaparro4,10,1.0,7 to 5,Yes
+TBecerra,10,1.0,7 to 5,Yes
+KNarvaez2,10,1.0,7 to 5,Yes
+SCepeda2,10,1.0,7 to 5,Yes
+ALopez108,10,1.0,7 to 5,Yes
+sperez40,9,1.0,7 to 5,Yes
