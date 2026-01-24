@@ -78,6 +78,8 @@ def run(playwright: Playwright) -> None:
     page = context.new_page()
     page.goto("https://app.powerbi.com/groups/me/reports/470121da-3902-4467-a4a4-85cba55102be/ReportSection?experience=power-bi")
 
+    fecha = calcular_domingo_asociado()
+
     # Espera que la página termine de cargar antes de buscar elementos
     # page.wait_for_load_state('networkidle')
 
@@ -86,7 +88,7 @@ def run(playwright: Playwright) -> None:
 
    #page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible", timeout=50000)
     page.get_by_test_id('collapse-pages-pane-btn').click()
-    page.get_by_role("textbox", name="End date. Available input").fill("11/24/2025")
+    page.get_by_role("textbox", name="End date. Available input").fill(fecha)
     container= page.locator('div[title="Assignation History"]')
     container.scroll_into_view_if_needed()
     container.hover(force=True)
