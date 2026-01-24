@@ -5,6 +5,7 @@ import time
 from playwright.sync_api import Playwright, sync_playwright, expect
 import pandas as pd
 import psutil
+from datetime import datetime, timedelta
 
 def kill_edge_processes():
     """
@@ -33,6 +34,36 @@ def kill_edge_processes():
         print("No se encontraron procesos de Edge en ejecución.")
 
 
+
+def calcular_domingo_asociado(fecha=None):
+    """
+    Calcula el domingo asociado según un patrón de rangos de fechas
+    y devuelve un string formato 'M/D/YYYY', por ejemplo '1/24/2026'.
+    """
+    if fecha is None:
+        fecha = datetime.today().date()
+    
+    FECHA_INICIO = datetime(2025, 10, 14).date()
+    DOMINGO_BASE = datetime(2025, 9, 7).date()
+    
+    dias_transcurridos = (fecha - FECHA_INICIO).days
+    
+    if dias_transcurridos < 0:
+        semanas_hacia_atras = (abs(dias_transcurridos) + 6) // 7
+        domingo_resultado = DOMINGO_BASE - timedelta(weeks=semanas_hacia_atras)
+    elif dias_transcurridos <= 5:
+        domingo_resultado = DOMINGO_BASE
+    else:
+        dias_post_primera = dias_transcurridos - 6
+        semanas_extra = (dias_post_primera // 7) + 1
+        domingo_resultado = DOMINGO_BASE + timedelta(weeks=semanas_extra)
+
+    # Formato M/D/YYYY sin ceros a la izquierda
+    mes = domingo_resultado.month
+    dia = domingo_resultado.day
+    anio = domingo_resultado.year
+
+    return f"{mes}/{dia}/{anio}"
 
 def run(playwright: Playwright) -> None:
     user_data_dir = os.path.join(
