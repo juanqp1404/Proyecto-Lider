@@ -85,17 +85,23 @@ def run(playwright: Playwright) -> None:
    #page.get_by_role("menuitem", name="Export").click()
 
    #page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible", timeout=50000)
-    page.get_by_role("textbox", name="End date. Available input").click()
+    page.get_by_test_id('collapse-pages-pane-btn').click()
+    page.get_by_role("textbox", name="End date. Available input").fill("11/24/2025")
     container= page.locator('div[title="Assignation History"]')
     container.scroll_into_view_if_needed()
-    container.hover()
-    page.get_by_test_id("visual-more-options-btn")
+    container.hover(force=True)
+    page.get_by_test_id("visual-more-options-btn").click()
   
+    #page.mouse.wheel(500,0)
     #page.get_by_test_id("visual-more-options-btn").click()
-    page.get_by_test_id("pbimenu-item.Export data").click()
-    page.get_by_test_id("export-btn").click()
+    select=page.get_by_test_id("pbimenu-item.Export data")
+    select.scroll_into_view_if_needed()
+    #page.get_by_test_id("pbimenu-item.Export data").click()
+    select.click()
+   
     with page.expect_download(timeout=450000) as download_info:  # 45 segundos para la descarga
-        page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
+         page.get_by_test_id("export-btn").click()
+      #page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
 
 
     download = download_info.value
