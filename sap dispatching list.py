@@ -35,35 +35,36 @@ def kill_edge_processes():
 
 
 
-def calcular_domingo_asociado(fecha=None):
+def fecha_filtro() -> str:
     """
-    Calcula el domingo asociado según un patrón de rangos de fechas
-    y devuelve un string formato 'M/D/YYYY', por ejemplo '1/24/2026'.
-    """
-    if fecha is None:
-        fecha = datetime.today().date()
-    
-    FECHA_INICIO = datetime(2025, 10, 14).date()
-    DOMINGO_BASE = datetime(2025, 9, 7).date()
-    
-    dias_transcurridos = (fecha - FECHA_INICIO).days
-    
-    if dias_transcurridos < 0:
-        semanas_hacia_atras = (abs(dias_transcurridos) + 6) // 7
-        domingo_resultado = DOMINGO_BASE - timedelta(weeks=semanas_hacia_atras)
-    elif dias_transcurridos <= 5:
-        domingo_resultado = DOMINGO_BASE
-    else:
-        dias_post_primera = dias_transcurridos - 6
-        semanas_extra = (dias_post_primera // 7) + 1
-        domingo_resultado = DOMINGO_BASE + timedelta(weeks=semanas_extra)
+    Retorna la fecha de ejecución en formato 'M/D/YYYY'.
 
-    # Formato M/D/YYYY sin ceros a la izquierda
-    mes = domingo_resultado.month
-    dia = domingo_resultado.day
-    anio = domingo_resultado.year
+    Regla:
+    - En general: usa la fecha de hoy.
+    - Excepción: si es lunes y la hora actual es <= 7:30 AM,
+      usa la fecha del viernes anterior.
+    """
+    ahora = datetime.now()
+    fecha = ahora.date()
+
+    # Lunes = 0 (lunes..domingo = 0..6)
+    if ahora.weekday() == 0 and ahora.time() <= datetime.strptime("07:30", "%H:%M").time():
+        # Lunes → viernes anterior (3 días antes)
+        fecha = (ahora - timedelta(days=3)).date()
+
+    mes = fecha.month
+    dia = fecha.day
+    anio = fecha.year
 
     return f"{mes}/{dia}/{anio}"
+
+def xlsx_a_csv(ruta_xlsx: str, ruta_csv: str, hoja: str | int = 0) -> None:
+    """
+    Convierte un XLSX a CSV sin dañar el contenido.
+    - hoja: nombre de la hoja o índice (0 = primera).
+    """
+    df = pd.read_excel(ruta_xlsx, sheet_name=hoja, engine="openpyxl")
+    df.to_csv(ruta_csv, index=False, encoding="utf-8-sig")  # utf-8 con BOM para Excel
 
 def run(playwright: Playwright) -> None:
     user_data_dir = os.path.join(
@@ -78,15 +79,8 @@ def run(playwright: Playwright) -> None:
     page = context.new_page()
     page.goto("https://app.powerbi.com/groups/me/reports/470121da-3902-4467-a4a4-85cba55102be/ReportSection?experience=power-bi")
 
-    fecha = calcular_domingo_asociado()
+    fecha = fecha_filtro()
 
-    # Espera que la página termine de cargar antes de buscar elementos
-    # page.wait_for_load_state('networkidle')
-
-    #page.wait_for_selector('role=menuitem[name="Export"]', state="visible", timeout=50000)
-   #page.get_by_role("menuitem", name="Export").click()
-
-   #page.wait_for_selector('role=menuitem[name="Export to CSV"]', state="visible", timeout=50000)
     page.get_by_test_id('collapse-pages-pane-btn').click()
     page.get_by_role("textbox", name="End date. Available input").fill(fecha)
     container= page.locator('div[title="Assignation History"]')
@@ -94,42 +88,37 @@ def run(playwright: Playwright) -> None:
     container.hover(force=True)
     page.get_by_test_id("visual-more-options-btn").click()
   
-    #page.mouse.wheel(500,0)
-    #page.get_by_test_id("visual-more-options-btn").click()
     select=page.get_by_test_id("pbimenu-item.Export data")
+
     select.scroll_into_view_if_needed()
-    #page.get_by_test_id("pbimenu-item.Export data").click()
     select.click()
    
     with page.expect_download(timeout=450000) as download_info:  # 45 segundos para la descarga
          page.get_by_test_id("export-btn").click()
-      #page.get_by_role("menuitem", name="Export to CSV", exact=True).click()
-
 
     download = download_info.value
 
-    new_filename = "sap_dispatching_list.csv"
+    new_filename = "sap_dispatching_list.xlsx"
+    ruta_xlsx = os.path.join(carpeta_actual, "data/sharepoint/", new_filename)
+    ruta_csv = os.path.join(carpeta_actual, "data/sharepoint/", "sap_dispatching_list.csv")
+
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
-    print(f"Descargando el archivo como: {new_filename}")
-    print(f"URL del archivo: {download}")
-    # Guardar el archivo en la carpeta actual con su nombre original
-    ruta_destino = os.path.join(carpeta_actual,"data/sharepoint/", new_filename)
-    download.save_as(ruta_destino)
+    print(f"Descargando XLSX a: {ruta_xlsx}")
+    download.save_as(ruta_xlsx)
 
-    # page.goto("https://example.com/")
-    # page.get_by_role("heading", name="Example Domain").click()
-    # page.get_by_role("link", name="More information...").click()
-    # page.get_by_role("link", name="IANA-managed Reserved Domains").click()
-    # page.get_by_role("link", name="XN--HLCJ6AYA9ESC7A").click()
-
-    # ---------------------
-    # time.sleep(15)
-
-    # page.fill('#i0116','JQuintero27@slb.com')
-    # time.sleep(305)
+    # Convertir inmediatamente a CSV
+    print("Convirtiendo XLSX → CSV...")
+    try:
+        df = pd.read_excel(ruta_xlsx, engine="openpyxl")
+        df.to_csv(ruta_csv, index=False, encoding="utf-8-sig")
+        print(f"✅ CSV guardado en: {ruta_csv}")
+        
+        # os.remove(ruta_xlsx)
+        
+    except Exception as e:
+        print(f"❌ Error convirtiendo: {e}")
 
     context.close()
-    # browser.close()
 
 kill_edge_processes()
 
