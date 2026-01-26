@@ -92,10 +92,9 @@ def run(playwright: Playwright) -> None:
 
     select.scroll_into_view_if_needed()
     select.click()
-   
     with page.expect_download(timeout=450000) as download_info:  # 45 segundos para la descarga
          page.get_by_test_id("export-btn").click()
-
+    
     download = download_info.value
 
     new_filename = "sap_dispatching_list.xlsx"
@@ -105,18 +104,17 @@ def run(playwright: Playwright) -> None:
     print(f"Nombre sugerido del archivo: {download.suggested_filename}")
     print(f"Descargando XLSX a: {ruta_xlsx}")
     download.save_as(ruta_xlsx)
-
+    
     # Convertir inmediatamente a CSV
-    print("Convirtiendo XLSX → CSV...")
+
     try:
         df = pd.read_excel(ruta_xlsx, engine="openpyxl")
         df.to_csv(ruta_csv, index=False, encoding="utf-8-sig")
-        print(f"✅ CSV guardado en: {ruta_csv}")
-        
+        print(f"CSV guardado en: {ruta_csv}")
         # os.remove(ruta_xlsx)
         
     except Exception as e:
-        print(f"❌ Error convirtiendo: {e}")
+        print(f"Error convirtiendo: {e}")
 
     context.close()
 
