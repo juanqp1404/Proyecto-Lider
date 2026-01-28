@@ -6,7 +6,7 @@ Considera 'Workload / Availability' y PRs ya asignados HOY en sap_dispatching_li
 
 import os
 import re
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import List, Tuple
 import pandas as pd
 
@@ -28,11 +28,21 @@ def ensure_output_dir(path: str = "./data/final") -> None:
 
 def parse_today_fixed() -> datetime:
     """
-    Para pruebas: fija 'hoy' al 2025-11-26 09:45.
-    En producción, cambia a: return datetime.now()
-    """
+    Retorna datetime.now() con excepción:
+    - Si es lunes (weekday=0) y hora <= 7:30 AM,
+      retorna viernes anterior (3 días antes).
     
-    return datetime.now()
+    Para pruebas: comenta la lógica y descomenta la fecha fija.
+    """
+    # ahora = datetime.now()
+    ahora = datetime(2026, 1, 26, 6, 45)
+
+    # Excepción: Lunes antes de 7:30 AM → Viernes anterior
+    if ahora.weekday() == 0 and ahora.time() <= datetime.strptime("07:30", "%H:%M").time():
+        fecha_viernes = ahora - timedelta(days=3)
+        return fecha_viernes.replace(hour=9, minute=0)  # Mantener hora consistente
+    
+    return ahora
 
 def load_workloads(
     lam_path: str = "./data/final/workload_cam_ind_lam.csv",
@@ -68,6 +78,15 @@ def split_special_prs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     df_normal = df[~mask_special].copy()
     return df_normal, df_special
 
+def filtrar_cameron_subcategory(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Devuelve solo las filas donde SubCategory es
+    'CAM IND LAM' o 'CAM IND NAM'.
+    """
+    valores = ["CAM IND LAM", "CAM IND NAM"]
+    mascara = df["SubCategory"].isin(valores)
+    return df[mascara].copy()
+
 # ------------------ CARGA EXISTENTE CON FILTRO DE FECHA (MODIFICADO) ------------------
 
 def load_existing_workload(
@@ -87,8 +106,11 @@ def load_existing_workload(
     
     try:
         df_dispatch = pd.read_csv(dispatching_path, encoding='utf-8-sig')
+        df_dispatch = filtrar_cameron_subcategory(df_dispatch)
         df_dispatch.columns = [c.strip() for c in df_dispatch.columns]
+        df_dispatch['Urgent?'] = pd.to_numeric(df_dispatch['Urgent?'], errors='coerce').fillna(0)
         
+
         # Verificar columnas necesarias
         if 'Buyer Alias' not in df_dispatch.columns:
             print("⚠️ sap_dispatching_list.csv no tiene columna 'Buyer Alias'")
@@ -109,7 +131,8 @@ def load_existing_workload(
             try:
                 df_dispatch[date_col] = pd.to_datetime(
                     df_dispatch[date_col], 
-                    format='%m/%d/%Y %I:%M %p',  # ← Formato explícito
+                     # ← Formato explícito
+                    # format='%m/%d/%Y %I:%M %p',  # ← Formato explícito
                     errors='coerce'
                 )
                 
