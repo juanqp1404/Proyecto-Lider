@@ -34,8 +34,8 @@ def parse_today_fixed() -> datetime:
     
     Para pruebas: comenta la lógica y descomenta la fecha fija.
     """
-    # ahora = datetime.now()
-    ahora = datetime(2026, 1, 26, 6, 45)
+    ahora = datetime.now()
+    # ahora = datetime(2026, 1, 23, 8, 45)
 
     # Excepción: Lunes antes de 7:30 AM → Viernes anterior
     if ahora.weekday() == 0 and ahora.time() <= datetime.strptime("07:30", "%H:%M").time():
@@ -109,7 +109,6 @@ def load_existing_workload(
         df_dispatch = filtrar_cameron_subcategory(df_dispatch)
         df_dispatch.columns = [c.strip() for c in df_dispatch.columns]
         df_dispatch['Urgent?'] = pd.to_numeric(df_dispatch['Urgent?'], errors='coerce').fillna(0)
-        
 
         # Verificar columnas necesarias
         if 'Buyer Alias' not in df_dispatch.columns:
