@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from pathlib import Path
 import pandas as pd
 
@@ -21,14 +21,32 @@ def ensure_output_dir(path: str = "./data/final") -> None:
     os.makedirs(path, exist_ok=True)
 
 
+# def parse_today_fixed() -> datetime:
+#     """
+#     Para pruebas: fija 'hoy' al 2025-11-26 09:45.
+#     En producción, cambia a: return datetime.now()
+#     """
+#     # return datetime(2025, 11, 26, 9, 45)
+#     # return datetime(2026, 1, 26, 9, 45)
+#     return datetime.now()
+
 def parse_today_fixed() -> datetime:
     """
-    Para pruebas: fija 'hoy' al 2025-11-26 09:45.
-    En producción, cambia a: return datetime.now()
+    Retorna datetime.now() con excepción:
+    - Si es lunes (weekday=0) y hora <= 7:30 AM,
+      retorna viernes anterior (3 días antes).
+    
+    Para pruebas: comenta la lógica y descomenta la fecha fija.
     """
-    # return datetime(2025, 11, 26, 9, 45)
-    # return datetime(2025, 12, 2, 9, 45)
-    return datetime.now()
+    ahora = datetime.now()
+    # ahora = datetime(2026, 1, 26, 6, 45)
+
+    # Excepción: Lunes antes de 7:30 AM → Viernes anterior
+    if ahora.weekday() == 0 and ahora.time() <= datetime.strptime("07:30", "%H:%M").time():
+        fecha_viernes = ahora - timedelta(days=3)
+        return fecha_viernes.replace(hour=9, minute=0)  # Mantener hora consistente
+    
+    return ahora
 
 
 def load_data(
@@ -61,7 +79,41 @@ def load_data(
     
     return df_buyers, df_dispatching
 
+# def limpiar_dispatching(df_dispatching: pd.DataFrame) -> pd.DataFrame:
+#     """
+#     Elimina filas de metadatos de Power BI y datos inválidos.
+#     Acepta SC Number numérico o alfanumérico (ej. PR761276).
+#     """
+#     df = df_dispatching.copy()
+    
+#     # 1. Filtrar SC Number no vacío (acepta números y códigos como PR761276)
+#     df = df[df['SC Number'].notna() & (df['SC Number'] != '')]
+    
+#     # 2. Eliminar filas con mensajes de Power BI SOLO en Created
+#     mensajes_powerbi = [
+#         'No filters applied', 
+#         'Exported data exceeded the allowed volume',
+#         'nan', 'NaN', 'null', ''
+#     ]
+#     df = df[~df['Created'].astype(str).str.lower().isin([m.lower() for m in mensajes_powerbi])]
+    
+#     # 3. Opcional: también filtrar por Created By no vacío (personas reales)
+#     df = df[df['Created By'].notna() & (df['Created By'] != '')]
+    
+#     # 4. Reset index
+#     df = df.reset_index(drop=True)
+    
+#     print(f"Datos limpios: {len(df)} filas válidas (eliminadas {len(df_dispatching) - len(df)})")
+#     return df
 
+def filtrar_cameron_subcategory(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Devuelve solo las filas donde SubCategory es
+    'CAM IND LAM' o 'CAM IND NAM'.
+    """
+    valores = ["CAM IND LAM", "CAM IND NAM"]
+    mascara = df["SubCategory"].isin(valores)
+    return df[mascara].copy()
 
 def normalize_dispatching_dates(df_dispatching: pd.DataFrame) -> pd.DataFrame:
     """
@@ -184,7 +236,8 @@ def main() -> None:
 
     # 3. Cargar datos
     df_buyers, df_dispatching = load_data()
-
+    df_dispatching = filtrar_cameron_subcategory(df_dispatching)
+    # df_dispatching = limpiar_dispatching(df_dispatching)
     # 4. Filtrar dispatching a 'hoy'
     df_dispatching_today = filter_dispatching_for_today(df_dispatching, hoy)
 
